@@ -150,7 +150,7 @@ class BhilNet:
         target_ip = self.ui.select_user(users)
         
         if target_ip:
-            message = self.ui.get_message("Enter your private message")
+            message = self.ui.get_message("Entrez votre message privé")
             if message:
                 # Check for quick message shortcuts
                 expanded_message = self.config.get_quick_message(message)
@@ -163,21 +163,21 @@ class BhilNet:
                     target_user = users[target_ip]
                     self.messaging.add_private_message(
                         target_ip, target_user['username'], 
-                        f"You: {message}"
+                        f"Vous: {message}"
                     )
-                    self.ui.show_notification("Message sent successfully!", Fore.GREEN)
+                    self.ui.show_notification("Message envoyé avec succès!", Fore.GREEN)
                 else:
-                    self.ui.show_notification("Failed to send message!", Fore.RED)
+                    self.ui.show_notification("Échec de l'envoi du message!", Fore.RED)
     
     def send_group_message(self):
         """Send a group message to all users."""
         users = self.discovery.get_users()
         
         if not users:
-            self.ui.show_notification("No users available for group message!", Fore.YELLOW)
+            self.ui.show_notification("Aucun utilisateur disponible pour le message de groupe!", Fore.YELLOW)
             return
         
-        message = self.ui.get_message("Enter your group message")
+        message = self.ui.get_message("Entrez votre message de groupe")
         if message:
             # Check for quick message shortcuts
             expanded_message = self.config.get_quick_message(message)
@@ -194,29 +194,29 @@ class BhilNet:
                 # Add to own group message history
                 self.messaging.add_group_message(
                     "self", self.username, 
-                    f"You: {message}"
+                    f"Vous: {message}"
                 )
                 self.ui.show_notification(
-                    f"Group message sent to {sent_count} user(s)!", 
+                    f"Message de groupe envoyé à {sent_count} utilisateur(s)!", 
                     Fore.GREEN
                 )
             else:
-                self.ui.show_notification("Failed to send group message!", Fore.RED)
+                self.ui.show_notification("Échec de l'envoi du message de groupe!", Fore.RED)
     
     def change_status(self):
         """Change user status."""
         from user_status import UserStatus
         
-        print(f"\n{Fore.BLUE}Select your status:{Style.RESET_ALL}")
-        print("  1 - 🟢 Online")
-        print("  2 - 🟡 Away")
-        print("  3 - 🔴 Busy")
+        print(f"\n{Fore.BLUE}Sélectionnez votre statut:{Style.RESET_ALL}")
+        print("  1 - 🟢 En ligne")
+        print("  2 - 🟡 Absent")
+        print("  3 - 🔴 Occupé")
         print("  4 - ⚫ Invisible")
-        print("  0 - Cancel")
+        print("  0 - Annuler")
         
         while True:
             try:
-                choice = input(f"\n{Fore.CYAN}Enter status number: {Style.RESET_ALL}").strip()
+                choice = input(f"\n{Fore.CYAN}Entrez le numéro de statut: {Style.RESET_ALL}").strip()
                 if choice == '0':
                     return
                 
@@ -229,13 +229,13 @@ class BhilNet:
                 
                 if choice in status_map:
                     status = status_map[choice]
-                    message = input(f"{Fore.CYAN}Status message (optional): {Style.RESET_ALL}").strip()
+                    message = input(f"{Fore.CYAN}Message de statut (optionnel): {Style.RESET_ALL}").strip()
                     
                     self.status_manager.set_status(status, message)
-                    self.ui.show_notification(f"Status changed to {status.value}!", Fore.GREEN)
+                    self.ui.show_notification(f"Statut changé vers {status.value}!", Fore.GREEN)
                     return
                 
-                print(f"{Fore.RED}Invalid choice! Please enter 0-4.{Style.RESET_ALL}")
+                print(f"{Fore.RED}Choix invalide ! Entrez 0-4.{Style.RESET_ALL}")
                 
             except (ValueError, KeyboardInterrupt):
                 return
@@ -248,31 +248,31 @@ class BhilNet:
         if new_state:
             self.sound.enable()
             self.config.set("notification_sound", True)
-            self.ui.show_notification("Sound notifications enabled!", Fore.GREEN)
+            self.ui.show_notification("Notifications sonores activées!", Fore.GREEN)
         else:
             self.sound.disable()
             self.config.set("notification_sound", False)
-            self.ui.show_notification("Sound notifications disabled!", Fore.YELLOW)
+            self.ui.show_notification("Notifications sonores désactivées!", Fore.YELLOW)
     
     def show_settings(self):
         """Show and edit settings."""
-        print(f"\n{Fore.BLUE}Current Settings:{Style.RESET_ALL}")
-        print(f"  Username: {self.config.get('username', 'Not set')}")
-        print(f"  Encryption: {Fore.GREEN}ON{Style.RESET_ALL}" if self.config.get('encryption_enabled') else f"  Encryption: {Fore.RED}OFF{Style.RESET_ALL}")
-        print(f"  Sound: {Fore.GREEN}ON{Style.RESET_ALL}" if self.config.get('notification_sound') else f"  Sound: {Fore.RED}OFF{Style.RESET_ALL}")
-        print(f"  Max History: {self.config.get('max_history', 100)} messages")
-        print(f"  Auto-away: {Fore.GREEN}ON{Style.RESET_ALL}" if self.status_manager.auto_away_enabled else f"  Auto-away: {Fore.RED}OFF{Style.RESET_ALL}")
+        print(f"\n{Fore.BLUE}Paramètres actuels:{Style.RESET_ALL}")
+        print(f"  Pseudo: {self.config.get('username', 'Non défini')}")
+        print(f"  Chiffrement: {Fore.GREEN}ACTIVÉ{Style.RESET_ALL}" if self.config.get('encryption_enabled') else f"  Chiffrement: {Fore.RED}DÉSACTIVÉ{Style.RESET_ALL}")
+        print(f"  Sons: {Fore.GREEN}ACTIVÉ{Style.RESET_ALL}" if self.config.get('notification_sound') else f"  Sons: {Fore.RED}DÉSACTIVÉ{Style.RESET_ALL}")
+        print(f"  Historique max: {self.config.get('max_history', 100)} messages")
+        print(f"  Auto-absence: {Fore.GREEN}ACTIVÉ{Style.RESET_ALL}" if self.status_manager.auto_away_enabled else f"  Auto-absence: {Fore.RED}DÉSACTIVÉ{Style.RESET_ALL}")
         
-        print(f"\n{Fore.YELLOW}Quick Messages:{Style.RESET_ALL}")
+        print(f"\n{Fore.YELLOW}Messages rapides:{Style.RESET_ALL}")
         quick_msgs = self.config.get("quick_messages", {})
         for shortcut, message in quick_msgs.items():
             print(f"  {shortcut} → {message}")
         
-        input(f"\n{Fore.CYAN}Press Enter to continue...{Style.RESET_ALL}")
+        input(f"\n{Fore.CYAN}Appuyez sur Entrée pour continuer...{Style.RESET_ALL}")
     
     def refresh_users(self):
         """Refresh the user list."""
-        self.ui.show_notification("User list refreshed!", Fore.GREEN)
+        self.ui.show_notification("Liste des utilisateurs actualisée!", Fore.GREEN)
         time.sleep(1)
     
     def show_message_history(self):
@@ -308,22 +308,22 @@ class BhilNet:
     
     def on_user_joined(self, user_info: Dict):
         """Handle user joined event."""
-        message = f"{user_info['username']} joined the chat"
+        message = f"{user_info['username']} a rejoint le chat"
         with self.message_lock:
             self.incoming_messages.append(f"[{time.strftime('%H:%M:%S')}] {Fore.GREEN}{message}{Style.RESET_ALL}")
         self.sound.play_notification("user_join")
     
     def on_user_left(self, user_info: Dict):
         """Handle user left event."""
-        message = f"{user_info['username']} left the chat"
+        message = f"{user_info['username']} a quitté le chat"
         with self.message_lock:
             self.incoming_messages.append(f"[{time.strftime('%H:%M:%S')}] {Fore.RED}{message}{Style.RESET_ALL}")
         self.sound.play_notification("user_leave")
     
     def on_message_received(self, message: Dict):
         """Handle incoming message."""
-        sender_ip = message.get('sender_ip', 'Unknown')
-        sender_name = message.get('sender', 'Unknown')
+        sender_ip = message.get('sender_ip', 'Inconnu')
+        sender_name = message.get('sender', 'Inconnu')
         content = message.get('content', '')
         msg_type = message.get('type', 'private')
         

@@ -1,4 +1,7 @@
-"""Message handling module for BhilNet."""
+"""Gestion des messages pour BhilNet.
+
+Développé par Bhilal CHITOU (Bhil€)
+"""
 
 import time
 import threading
@@ -86,6 +89,6 @@ class MessageManager:
         timestamp = time.strftime("%H:%M:%S", time.localtime(message['timestamp']))
         
         if message['type'] == 'private':
-            return f"[{timestamp}] [Private] {message['sender_username']}: {message['content']}"
+            return f"[{timestamp}] [Privé] {message['sender_username']}: {message['content']}"
         else:
-            return f"[{timestamp}] [Group] {message['sender_username']}: {message['content']}"
+            return f"[{timestamp}] [Groupe] {message['sender_username']}: {message['content']}"
