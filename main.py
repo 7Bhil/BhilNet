@@ -14,6 +14,9 @@ from discovery import UserDiscovery
 from network import NetworkManager
 from messaging import MessageManager
 from ui import TerminalUI
+from config_manager import ConfigManager
+from sound_manager import SoundManager
+from user_status import StatusManager, UserStatus
 
 # Setup logging
 setup_logging()
@@ -23,7 +26,10 @@ class BhilNet:
     """Main application class for BhilNet."""
     
     def __init__(self):
+        self.config = ConfigManager()
         self.ui = TerminalUI()
+        self.sound = SoundManager(enabled=self.config.get("notification_sound", False))
+        self.status_manager = StatusManager()
         self.username = ""
         self.discovery = None
         self.network = None
@@ -45,13 +51,17 @@ class BhilNet:
         signal.signal(signal.SIGINT, self.signal_handler)
         signal.signal(signal.SIGTERM, self.signal_handler)
         
-        # Get username
-        self.username = self.ui.get_username()
+        # Get username (use saved one or ask)
+        saved_username = self.config.get("username", "")
+        self.username = self.ui.get_username(saved_username)
+        
+        # Save username for next time
+        self.config.set("username", self.username)
         
         # Initialize modules
         self.discovery = UserDiscovery(self.username)
-        self.network = NetworkManager(self.username)
-        self.messaging = MessageManager()
+        self.network = NetworkManager(self.username, encryption=self.config.get("encryption_enabled", True))
+        self.messaging = MessageManager(max_history=self.config.get("max_history", 100))
         
         # Setup callbacks
         self.discovery.on_user_joined = self.on_user_joined
@@ -61,6 +71,7 @@ class BhilNet:
         # Start services
         self.discovery.start()
         self.network.start()
+        self.status_manager.start_auto_away_monitor()
         self.running = True
         
         # Start message display thread
@@ -72,6 +83,8 @@ class BhilNet:
     def stop(self):
         """Stop the BhilNet application."""
         self.running = False
+        if self.status_manager:
+            self.status_manager.stop_auto_away_monitor()
         if self.discovery:
             self.discovery.stop()
         if self.network:
@@ -82,14 +95,20 @@ class BhilNet:
         """Main application loop."""
         while self.running:
             try:
+                # Update activity (prevents auto-away)
+                self.status_manager.update_activity()
+                
                 # Get current users
                 users = self.discovery.get_users()
                 
                 # Get recent messages
                 recent_messages = self.get_recent_messages()
                 
+                # Get current status
+                current_status = self.status_manager.get_status()
+                
                 # Show main interface
-                self.ui.show_main_interface(users, recent_messages)
+                self.ui.show_main_interface(users, recent_messages, current_status)
                 
                 # Get menu choice
                 choice = self.ui.get_menu_choice()
@@ -102,8 +121,14 @@ class BhilNet:
                 elif choice == 3:
                     self.refresh_users()
                 elif choice == 4:
-                    self.show_message_history()
+                    self.change_status()
                 elif choice == 5:
+                    self.toggle_sound()
+                elif choice == 6:
+                    self.show_message_history()
+                elif choice == 7:
+                    self.show_settings()
+                elif choice == 8:
                     self.stop()
                     break
                     
@@ -122,6 +147,11 @@ class BhilNet:
         if target_ip:
             message = self.ui.get_message("Enter your private message")
             if message:
+                # Check for quick message shortcuts
+                expanded_message = self.config.get_quick_message(message)
+                if expanded_message:
+                    message = expanded_message
+                
                 success = self.network.send_message(target_ip, message, "private")
                 if success:
                     # Add to own message history
@@ -144,6 +174,11 @@ class BhilNet:
         
         message = self.ui.get_message("Enter your group message")
         if message:
+            # Check for quick message shortcuts
+            expanded_message = self.config.get_quick_message(message)
+            if expanded_message:
+                message = expanded_message
+            
             # Send to each user
             sent_count = 0
             for user_ip in users:
@@ -162,6 +197,73 @@ class BhilNet:
                 )
             else:
                 self.ui.show_notification("Failed to send group message!", Fore.RED)
+    
+    def change_status(self):
+        """Change user status."""
+        from user_status import UserStatus
+        
+        print(f"\n{Fore.BLUE}Select your status:{Style.RESET_ALL}")
+        print("  1 - 🟢 Online")
+        print("  2 - 🟡 Away")
+        print("  3 - 🔴 Busy")
+        print("  4 - ⚫ Invisible")
+        print("  0 - Cancel")
+        
+        while True:
+            try:
+                choice = input(f"\n{Fore.CYAN}Enter status number: {Style.RESET_ALL}").strip()
+                if choice == '0':
+                    return
+                
+                status_map = {
+                    '1': UserStatus.ONLINE,
+                    '2': UserStatus.AWAY,
+                    '3': UserStatus.BUSY,
+                    '4': UserStatus.INVISIBLE
+                }
+                
+                if choice in status_map:
+                    status = status_map[choice]
+                    message = input(f"{Fore.CYAN}Status message (optional): {Style.RESET_ALL}").strip()
+                    
+                    self.status_manager.set_status(status, message)
+                    self.ui.show_notification(f"Status changed to {status.value}!", Fore.GREEN)
+                    return
+                
+                print(f"{Fore.RED}Invalid choice! Please enter 0-4.{Style.RESET_ALL}")
+                
+            except (ValueError, KeyboardInterrupt):
+                return
+    
+    def toggle_sound(self):
+        """Toggle sound notifications."""
+        current_state = self.sound.enabled
+        new_state = not current_state
+        
+        if new_state:
+            self.sound.enable()
+            self.config.set("notification_sound", True)
+            self.ui.show_notification("Sound notifications enabled!", Fore.GREEN)
+        else:
+            self.sound.disable()
+            self.config.set("notification_sound", False)
+            self.ui.show_notification("Sound notifications disabled!", Fore.YELLOW)
+    
+    def show_settings(self):
+        """Show and edit settings."""
+        print(f"\n{Fore.BLUE}Current Settings:{Style.RESET_ALL}")
+        print(f"  Username: {self.config.get('username', 'Not set')}")
+        print(f"  Encryption: {Fore.GREEN}ON{Style.RESET_ALL}" if self.config.get('encryption_enabled') else f"  Encryption: {Fore.RED}OFF{Style.RESET_ALL}")
+        print(f"  Sound: {Fore.GREEN}ON{Style.RESET_ALL}" if self.config.get('notification_sound') else f"  Sound: {Fore.RED}OFF{Style.RESET_ALL}")
+        print(f"  Max History: {self.config.get('max_history', 100)} messages")
+        print(f"  Auto-away: {Fore.GREEN}ON{Style.RESET_ALL}" if self.status_manager.auto_away_enabled else f"  Auto-away: {Fore.RED}OFF{Style.RESET_ALL}")
+        
+        print(f"\n{Fore.YELLOW}Quick Messages:{Style.RESET_ALL}")
+        quick_msgs = self.config.get("quick_messages", {})
+        for shortcut, message in quick_msgs.items():
+            print(f"  {shortcut} → {message}")
+        
+        input(f"\n{Fore.CYAN}Press Enter to continue...{Style.RESET_ALL}")
     
     def refresh_users(self):
         """Refresh the user list."""
@@ -204,12 +306,14 @@ class BhilNet:
         message = f"{user_info['username']} joined the chat"
         with self.message_lock:
             self.incoming_messages.append(f"[{time.strftime('%H:%M:%S')}] {Fore.GREEN}{message}{Style.RESET_ALL}")
+        self.sound.play_notification("user_join")
     
     def on_user_left(self, user_info: Dict):
         """Handle user left event."""
         message = f"{user_info['username']} left the chat"
         with self.message_lock:
             self.incoming_messages.append(f"[{time.strftime('%H:%M:%S')}] {Fore.RED}{message}{Style.RESET_ALL}")
+        self.sound.play_notification("user_leave")
     
     def on_message_received(self, message: Dict):
         """Handle incoming message."""
@@ -228,6 +332,9 @@ class BhilNet:
         formatted_msg = self.messaging.format_message(message)
         with self.message_lock:
             self.incoming_messages.append(formatted_msg)
+        
+        # Play notification sound
+        self.sound.play_notification("message")
     
     def message_display_thread(self):
         """Thread to handle message notifications."""

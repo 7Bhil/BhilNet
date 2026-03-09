@@ -28,7 +28,7 @@ class TerminalUI:
         else:
             os.system('clear')
     
-    def get_username(self) -> str:
+    def get_username(self, default: str = "") -> str:
         """Get username from user input."""
         self.clear_screen()
         print(f"{Fore.CYAN}{'='*50}")
@@ -36,20 +36,38 @@ class TerminalUI:
         print(f"{Fore.CYAN}{'='*50}{Style.RESET_ALL}")
         print()
         
+        if default:
+            prompt = f"{Fore.YELLOW}Choose your username [{default}]: {Style.RESET_ALL}"
+        else:
+            prompt = f"{Fore.YELLOW}Choose your username: {Style.RESET_ALL}"
+        
         while True:
-            username = input(f"{Fore.YELLOW}Choose your username: {Style.RESET_ALL}").strip()
+            username = input(prompt).strip()
+            if not username and default:
+                username = default
+            
             if username and len(username) >= 2 and len(username) <= 20:
                 self.username = username
                 return username
             print(f"{Fore.RED}Username must be 2-20 characters long!{Style.RESET_ALL}")
     
-    def show_main_interface(self, users: Dict[str, Dict], recent_messages: List[str] = None):
+    def show_main_interface(self, users: Dict[str, Dict], recent_messages: List[str] = None, current_status: Dict[str, str] = None):
         """Display the main interface."""
         self.clear_screen()
         
         print(f"{Fore.CYAN}{'='*50}")
         print(f"{Fore.CYAN}    BhilNet - LAN Terminal Chat v1.0")
         print(f"{Fore.CYAN}    Logged in as: {Fore.GREEN}{self.username}{Style.RESET_ALL}")
+        
+        # Show status if provided
+        if current_status:
+            from user_status import UserStatus, StatusManager
+            status_obj = UserStatus(current_status.get('status', 'online'))
+            status_color = StatusManager.get_status_color(status_obj)
+            status_emoji = StatusManager.get_status_emoji(status_obj)
+            status_msg = current_status.get('message', '')
+            print(f"{Fore.CYAN}    Status: {status_color}{status_emoji} {status_obj.value.upper()}{Style.RESET_ALL} {status_msg}")
+        
         print(f"{Fore.CYAN}{'='*50}{Style.RESET_ALL}")
         print()
         
@@ -75,20 +93,23 @@ class TerminalUI:
         print("  1 - Send private message")
         print("  2 - Send group message")
         print("  3 - Refresh users")
-        print("  4 - View message history")
-        print("  5 - Quit")
+        print("  4 - Change status")
+        print("  5 - Toggle sound")
+        print("  6 - View message history")
+        print("  7 - Settings")
+        print("  8 - Quit")
         print()
     
     def get_menu_choice(self) -> int:
         """Get user menu choice."""
         while True:
             try:
-                choice = input(f"{Fore.CYAN}Enter your choice (1-5): {Style.RESET_ALL}").strip()
-                if choice in ['1', '2', '3', '4', '5']:
+                choice = input(f"{Fore.CYAN}Enter your choice (1-8): {Style.RESET_ALL}").strip()
+                if choice in ['1', '2', '3', '4', '5', '6', '7', '8']:
                     return int(choice)
-                print(f"{Fore.RED}Invalid choice! Please enter 1-5.{Style.RESET_ALL}")
+                print(f"{Fore.RED}Invalid choice! Please enter 1-8.{Style.RESET_ALL}")
             except KeyboardInterrupt:
-                return 5
+                return 8
     
     def select_user(self, users: Dict[str, Dict]) -> Optional[str]:
         """Let user select a recipient."""

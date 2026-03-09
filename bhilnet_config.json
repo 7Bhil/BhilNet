@@ -1,0 +1,15 @@
+{
+  "username": "bh",
+  "encryption_enabled": true,
+  "notification_sound": false,
+  "auto_refresh_interval": 5,
+  "theme": "default",
+  "max_history": 100,
+  "default_status": "online",
+  "quick_messages": {
+    ":hi": "Hello everyone!",
+    ":bye": "Goodbye!",
+    ":brb": "Be right back",
+    ":coffee": "Going for coffee \u2615"
+  }
+}
