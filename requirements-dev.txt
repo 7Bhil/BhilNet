@@ -1,0 +1,17 @@
+# Development dependencies for BhilNet
+
+# Core dependencies (from requirements.txt)
+cryptography>=41.0.0
+colorama>=0.4.6
+
+# Development tools
+pytest>=7.0.0
+pytest-cov>=4.0.0
+black>=22.0.0
+flake8>=5.0.0
+mypy>=1.0.0
+
+# Optional development tools
+pre-commit>=2.20.0
+isort>=5.10.0
+bandit>=1.7.0

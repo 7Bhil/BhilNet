@@ -1,5 +1,10 @@
 #!/usr/bin/env python3
-"""BhilNet - LAN Terminal Chat Application."""
+"""BhilNet - Chat Terminal Réseau Local.
+
+Développé par Bhilal CHITOU (Bhil€)
+Email: 7bhilal.chitou7@gmail.com
+GitHub: https://github.com/7Bhil
+"""
 
 import sys
 import signal
